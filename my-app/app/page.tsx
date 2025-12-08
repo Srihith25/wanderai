@@ -5,6 +5,7 @@ import MapWrapper from '@/components/MapWrapper';
 import ChatBot from '@/components/ChatBot';
 import ThemeToggle from '@/components/ThemeToggle';
 import DownloadButton from '@/components/DownloadButton';
+import '../styles/globals.css'; 
 
 interface Activity {
   time: string;
