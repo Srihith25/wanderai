@@ -46,6 +46,7 @@ interface TripMapProps {
   selectedActivity: Activity | null;
   onSelectActivity: (activity: Activity) => void;
   isFullscreen?: boolean;
+  className?: string; // ✅ Add this
 }
 
 function MapController({ center }: { center: [number, number] }) {
@@ -59,30 +60,26 @@ function MapController({ center }: { center: [number, number] }) {
 function ResizeHandler({ isFullscreen }: { isFullscreen: boolean }) {
   const map = useMap();
   useEffect(() => {
-    // We run invalidateSize whenever isFullscreen changes
-    // and when the component mounts (initial render).
-    // Delay is still a good idea for fixed/absolute positioning.
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 100); 
-
-    return () => clearTimeout(timer); // Cleanup
-  }, [isFullscreen, map]); // <--- Now depends on isFullscreen
+    const timer = setTimeout(() => map.invalidateSize(), 100);
+    return () => clearTimeout(timer);
+  }, [isFullscreen, map]);
   return null;
 }
 
 const TripMap = forwardRef<{ getMap: () => L.Map | null }, TripMapProps>(
-  ({ activities, selectedActivity, onSelectActivity, isFullscreen }, ref) => {
+  ({ activities, selectedActivity, onSelectActivity, isFullscreen, className }, ref) => {
     const mapRef = useRef<L.Map | null>(null);
     const { resolvedTheme } = useTheme();
 
     useImperativeHandle(ref, () => ({
-      getMap: () => mapRef.current
+      getMap: () => mapRef.current,
     }));
 
     if (!activities || activities.length === 0) {
       return (
-        <div className={`${isFullscreen ? 'h-full' : 'h-96'} w-full rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400`}>
+        <div
+          className={`${isFullscreen ? 'h-full' : 'h-96'} w-full rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400`}
+        >
           Generate an itinerary to see locations on the map
         </div>
       );
@@ -90,18 +87,19 @@ const TripMap = forwardRef<{ getMap: () => L.Map | null }, TripMapProps>(
 
     const center = selectedActivity?.coordinates || activities[0]?.coordinates || [0, 0];
 
-    const tileUrl = resolvedTheme === 'dark'
-      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    const tileUrl =
+      resolvedTheme === 'dark'
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
     return (
       <MapContainer
         center={center}
         zoom={14}
-        className={`${isFullscreen ? 'h-full' : 'h-96'} w-full rounded-lg`}
+        className={className ?? `${isFullscreen ? 'h-full' : 'h-96'} w-full rounded-lg`}
         ref={mapRef}
       >
-        <TileLayer url={tileUrl} attribution='&copy; OpenStreetMap contributors' />
+        <TileLayer url={tileUrl} attribution="&copy; OpenStreetMap contributors" />
         <MapController center={center} />
         <ResizeHandler isFullscreen={isFullscreen ?? false} />
 
@@ -125,11 +123,7 @@ const TripMap = forwardRef<{ getMap: () => L.Map | null }, TripMapProps>(
         ))}
 
         {selectedActivity?.recommendations?.map((rec, idx) => (
-          <Marker
-            key={`rec-${idx}`}
-            position={rec.coordinates}
-            icon={recommendationIcon}
-          >
+          <Marker key={`rec-${idx}`} position={rec.coordinates} icon={recommendationIcon}>
             <Popup>
               <div className="text-gray-900">
                 <strong>{rec.name}</strong>
