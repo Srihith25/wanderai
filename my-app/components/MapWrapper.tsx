@@ -1,6 +1,7 @@
 'use client';
 import dynamic from 'next/dynamic';
 import { useState, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import { Map } from 'leaflet';
 
 const TripMap = dynamic(() => import('./TripMap'), {
@@ -26,125 +27,127 @@ interface MapWrapperProps {
   activities: Activity[];
   selectedActivity: Activity | null;
   onSelectActivity: (activity: Activity) => void;
+  // Optional prop if you want to handle itinerary download outside map
+  onDownloadItinerary?: () => void;
 }
 
 export default function MapWrapper({
   activities,
   selectedActivity,
   onSelectActivity,
+  onDownloadItinerary,
 }: MapWrapperProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-
   const tripMapRef = useRef<{ getMap: () => Map | null }>(null);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
+  // Map download using html2canvas
   const downloadMap = async () => {
-  const map = tripMapRef.current?.getMap();
-  if (!map) return;
+    const mapDiv = mapContainerRef.current;
+    if (!mapDiv) return;
 
-  try {
-    leafletImage(map, (err: Error | null, canvas: HTMLCanvasElement) => {
-      if (err) throw err;
-
+    try {
+      const canvas = await html2canvas(mapDiv, { useCORS: true });
       const link = document.createElement('a');
       link.download = 'trip-map.png';
       link.href = canvas.toDataURL('image/png');
       link.click();
-    });
-  } catch (error) {
-    console.error('Failed to download map:', error);
-    alert('Failed to download map. Please try again.');
-  }
+    } catch (error) {
+      console.error('Failed to download map:', error);
+      alert('Failed to download map. Please try again.');
+    }
   };
 
-  if (isFullscreen) {
-    return (
-      <div className="fixed inset-0 z-50 bg-gray-900">
-        <div className="absolute top-4 right-4 z-[1000] flex gap-2">
-          <button
-            onClick={downloadMap}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2"
-          >
-            <span>📷</span> Download Map
-          </button>
-          <button
-            onClick={toggleFullscreen}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-          >
-            ✕ Exit Fullscreen
-          </button>
-        </div>
-        <div ref={mapContainerRef} className="h-full w-full">
-          <TripMap
-            ref={tripMapRef}
-            activities={activities}
-            selectedActivity={selectedActivity}
-            onSelectActivity={onSelectActivity}
-            isFullscreen={true}
-            className="h-full w-full"
-          />
-        </div>
+  return (
+    <>
+      {/* Fullscreen overlay */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-[1000] bg-gray-900">
+          {/* Buttons */}
+          <div className="fixed top-4 right-4 z-[1100] flex gap-2">
+            <button
+              onClick={downloadMap}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+            >
+              📷 Download Map
+            </button>
+            <button
+              onClick={toggleFullscreen}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+            >
+              ✕ Exit Fullscreen
+            </button>
+            {onDownloadItinerary && (
+              <button
+                onClick={onDownloadItinerary}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+              >
+                ⬇️ Download Itinerary
+              </button>
+            )}
+          </div>
 
-        {/* Legend */}
-        <div className="absolute bottom-4 left-4 z-[1000] bg-gray-800/90 backdrop-blur p-4 rounded-lg text-white text-sm">
-          <h4 className="font-semibold mb-2">Legend</h4>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 bg-blue-500 rounded-full"></span>
-              <span>Activity Location</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 bg-red-500 rounded-full"></span>
-              <span>Selected Location</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 bg-green-500 rounded-full"></span>
-              <span>Recommendation</span>
-            </div>
+          {/* Map */}
+          <div ref={mapContainerRef} className="h-full w-full">
+            <TripMap
+              ref={tripMapRef}
+              activities={activities}
+              selectedActivity={selectedActivity}
+              onSelectActivity={onSelectActivity}
+              isFullscreen={true}
+              className="h-full w-full"
+            />
           </div>
         </div>
-      </div>
-    );
-  }
+      )}
 
-  return (
-    <div className="relative">
-      <div className="absolute top-2 right-2 z-[1000] flex gap-2">
-        <button
-          onClick={downloadMap}
-          className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-          title="Download Map"
-        >
-          📷
-        </button>
-        <button
-          onClick={toggleFullscreen}
-          className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-          title="Fullscreen"
-        >
-          ⛶
-        </button>
-      </div>
-      <div ref={mapContainerRef}>
-        <TripMap
-          ref={tripMapRef}
-          activities={activities}
-          selectedActivity={selectedActivity}
-          onSelectActivity={onSelectActivity}
-          isFullscreen={false}
-          className="w-full h-96"
-        />
-      </div>
-    </div>
+      {/* Normal (non-fullscreen) map */}
+      {!isFullscreen && (
+        <div className="relative">
+          {/* Buttons */}
+          <div className="absolute top-2 right-2 z-[100] flex gap-2">
+            <button
+              onClick={downloadMap}
+              className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+              title="Download Map"
+            >
+              📷
+            </button>
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+              title="Fullscreen"
+            >
+              ⛶
+            </button>
+            {onDownloadItinerary && (
+              <button
+                onClick={onDownloadItinerary}
+                className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                title="Download Itinerary"
+              >
+                ⬇️
+              </button>
+            )}
+          </div>
+
+          {/* Map */}
+          <div ref={mapContainerRef}>
+            <TripMap
+              ref={tripMapRef}
+              activities={activities}
+              selectedActivity={selectedActivity}
+              onSelectActivity={onSelectActivity}
+              isFullscreen={false}
+              className="w-full h-96"
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
-}
-
-// Temporary leafletImage stub (replace with actual leaflet-image if needed)
-function leafletImage(map: Map, callback: (err: Error | null, canvas: HTMLCanvasElement) => void) {
-  // For now, just throw an error to avoid compilation issues
-  console.warn('leafletImage is not implemented yet');
 }

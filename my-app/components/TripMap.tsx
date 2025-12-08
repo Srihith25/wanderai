@@ -46,7 +46,7 @@ interface TripMapProps {
   selectedActivity: Activity | null;
   onSelectActivity: (activity: Activity) => void;
   isFullscreen?: boolean;
-  className?: string; // ✅ Add this
+  className?: string;
 }
 
 function MapController({ center }: { center: [number, number] }) {
@@ -59,10 +59,13 @@ function MapController({ center }: { center: [number, number] }) {
 
 function ResizeHandler({ isFullscreen }: { isFullscreen: boolean }) {
   const map = useMap();
+
   useEffect(() => {
-    const timer = setTimeout(() => map.invalidateSize(), 100);
+    // Delay to ensure container size has updated before invalidating
+    const timer = setTimeout(() => map.invalidateSize(), 150);
     return () => clearTimeout(timer);
-  }, [isFullscreen, map]);
+  }, [isFullscreen, map]); // ✅ invalidateSize whenever fullscreen toggles
+
   return null;
 }
 
