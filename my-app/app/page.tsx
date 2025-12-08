@@ -55,9 +55,9 @@ export default function Home() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
           <h1 className="text-3xl md:text-4xl font-bold text-center">
-            🌍 AI Travel Planner
+            🌍 Wander AI
           </h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 relative z-30">
             <DownloadButton itinerary={itinerary} destination={destination} />
             <ThemeToggle />
           </div>

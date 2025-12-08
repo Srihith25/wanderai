@@ -56,13 +56,18 @@ function MapController({ center }: { center: [number, number] }) {
   return null;
 }
 
-function ResizeHandler() {
+function ResizeHandler({ isFullscreen }: { isFullscreen: boolean }) {
   const map = useMap();
   useEffect(() => {
-    setTimeout(() => {
+    // We run invalidateSize whenever isFullscreen changes
+    // and when the component mounts (initial render).
+    // Delay is still a good idea for fixed/absolute positioning.
+    const timer = setTimeout(() => {
       map.invalidateSize();
-    }, 100);
-  }, [map]);
+    }, 100); 
+
+    return () => clearTimeout(timer); // Cleanup
+  }, [isFullscreen, map]); // <--- Now depends on isFullscreen
   return null;
 }
 
@@ -98,7 +103,7 @@ const TripMap = forwardRef<{ getMap: () => L.Map | null }, TripMapProps>(
       >
         <TileLayer url={tileUrl} attribution='&copy; OpenStreetMap contributors' />
         <MapController center={center} />
-        <ResizeHandler />
+        <ResizeHandler isFullscreen={isFullscreen ?? false} />
 
         {activities.map((activity, idx) => (
           <Marker

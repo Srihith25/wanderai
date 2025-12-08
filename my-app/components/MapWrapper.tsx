@@ -2,6 +2,7 @@
 import dynamic from 'next/dynamic';
 import { useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
+import { Map } from 'leaflet';
 
 const TripMap = dynamic(() => import('./TripMap'), {
   ssr: false,
@@ -34,24 +35,27 @@ export default function MapWrapper({ activities, selectedActivity, onSelectActiv
     setIsFullscreen(!isFullscreen);
   };
 
-  const downloadMap = async () => {
-    if (!mapContainerRef.current) return;
+  const tripMapRef = useRef<{ getMap: () => L.Map | null }>(null); // New ref for TripMap
 
-    try {
-      const canvas = await html2canvas(mapContainerRef.current, {
-        useCORS: true,
-        allowTaint: true,
-      });
+  const downloadMap = async () => {
+  const map = tripMapRef.current?.getMap();
+  if (!map) return;
+
+  try {
+    // Use leaflet-image to generate the image
+    leafletImage(map, function (err: Error, canvas: HTMLCanvasElement) {
+      if (err) throw err;
 
       const link = document.createElement('a');
       link.download = 'trip-map.png';
       link.href = canvas.toDataURL('image/png');
       link.click();
-    } catch (error) {
-      console.error('Failed to download map:', error);
-      alert('Failed to download map. Please try again.');
-    }
-  };
+    });
+  } catch (error) {
+    console.error('Failed to download map:', error);
+    alert('Failed to download map. Please try again.');
+  }
+};
 
   if (isFullscreen) {
     return (
@@ -76,6 +80,7 @@ export default function MapWrapper({ activities, selectedActivity, onSelectActiv
             selectedActivity={selectedActivity}
             onSelectActivity={onSelectActivity}
             isFullscreen={true}
+            className = "h-full w-full"
           />
         </div>
 
@@ -129,4 +134,8 @@ export default function MapWrapper({ activities, selectedActivity, onSelectActiv
       </div>
     </div>
   );
+}
+
+function leafletImage(map: Map, arg1: (err: Error, canvas: HTMLCanvasElement) => void) {
+  throw new Error('Function not implemented.');
 }
