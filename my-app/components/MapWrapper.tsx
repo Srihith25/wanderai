@@ -2,19 +2,28 @@
 
 import dynamic from 'next/dynamic';
 import { useRef, useState } from 'react';
+import { Map as LeafletMap } from 'leaflet';
 // @ts-ignore
 import leafletImage from 'leaflet-image';
-import { Map } from 'leaflet';
 
 const TripMap = dynamic(() => import('./TripMap'), { ssr: false });
+
+interface Activity {
+  place: string;
+  coordinates: [number, number];
+}
 
 export default function MapWrapper({
   activities,
   selectedActivity,
   onSelectActivity,
-}: any) {
+}: {
+  activities: Activity[];
+  selectedActivity?: Activity | null;
+  onSelectActivity?: (activity: Activity) => void;
+}) {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const tripMapRef = useRef<{ getMap: () => Map | null }>(null);
+  const tripMapRef = useRef<{ getMap: () => LeafletMap | null }>(null);
 
   const toggleFullscreen = () => setIsFullscreen(!isFullscreen);
 
@@ -44,7 +53,7 @@ export default function MapWrapper({
           : 'relative h-96 w-full'
       }
     >
-      {/* Buttons inside map */}
+      {/* Buttons */}
       <div className="absolute top-4 right-4 z-[10000] flex flex-col gap-2">
         <button
           onClick={downloadMap}
@@ -52,7 +61,6 @@ export default function MapWrapper({
         >
           📷 Download Map
         </button>
-
         <button
           onClick={toggleFullscreen}
           className="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-lg shadow-lg"
@@ -61,13 +69,12 @@ export default function MapWrapper({
         </button>
       </div>
 
-      {/* MAP */}
+      {/* Map */}
       <TripMap
         ref={tripMapRef}
         activities={activities}
         selectedActivity={selectedActivity}
         onSelectActivity={onSelectActivity}
-        isFullscreen={isFullscreen}
         className="h-full w-full"
       />
     </div>

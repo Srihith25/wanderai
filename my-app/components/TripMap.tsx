@@ -1,41 +1,44 @@
 'use client';
 
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { forwardRef, useImperativeHandle } from 'react';
-import L, { Map } from 'leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { forwardRef, useImperativeHandle, useRef } from 'react';
+import L, { Map as LeafletMap } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 interface Activity {
-  coordinates: [number, number];
   place: string;
-  // Add other activity fields if needed
+  coordinates: [number, number];
 }
 
 interface TripMapProps {
   activities: Activity[];
   selectedActivity?: Activity | null;
   onSelectActivity?: (activity: Activity) => void;
-  isFullscreen?: boolean;
   className?: string;
 }
 
-const TripMap = forwardRef<{ getMap: () => Map | null }, TripMapProps>(
-  ({ activities, selectedActivity, onSelectActivity, className }, ref) => {
+export interface TripMapRef {
+  getMap: () => LeafletMap | null;
+}
+
+const TripMap = forwardRef<TripMapRef, TripMapProps>(
+  ({ activities, onSelectActivity, className }, ref) => {
     const defaultPosition: [number, number] =
       activities.length > 0 ? activities[0].coordinates : [40.7128, -74.006];
 
-    const map = useMap();
+    const mapRef = useRef<LeafletMap | null>(null);
 
     useImperativeHandle(ref, () => ({
-      getMap: () => map,
+      getMap: () => mapRef.current,
     }));
 
     return (
       <MapContainer
         center={defaultPosition}
         zoom={13}
-        scrollWheelZoom
+        scrollWheelZoom={true}
         className={className}
+        ref={mapRef as any} // ✅ use ref instead of whenCreated
       >
         <TileLayer
           attribution="&copy; Stadia Maps"
