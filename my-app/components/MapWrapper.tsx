@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useRef, useState } from 'react';
+// @ts-ignore
 import leafletImage from 'leaflet-image';
 import { Map } from 'leaflet';
 
