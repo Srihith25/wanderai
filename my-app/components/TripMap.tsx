@@ -1,19 +1,24 @@
 'use client';
 
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { forwardRef, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useImperativeHandle } from 'react';
 import L, { Map as LeafletMap } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-interface Activity {
+// Define your Activity type inline
+export interface Activity {
+  time: string;
   place: string;
+  description: string;
   coordinates: [number, number];
+  recommendations?: any[];
 }
 
-interface TripMapProps {
+export interface TripMapProps {
   activities: Activity[];
-  selectedActivity?: Activity | null;
-  onSelectActivity?: (activity: Activity) => void;
+  selectedActivity: Activity | null;
+  onSelectActivity: (activity: Activity) => void;
+  isFullscreen: boolean;
   className?: string;
 }
 
@@ -22,23 +27,25 @@ export interface TripMapRef {
 }
 
 const TripMap = forwardRef<TripMapRef, TripMapProps>(
-  ({ activities, onSelectActivity, className }, ref) => {
+  ({ activities, selectedActivity, onSelectActivity, className }, ref) => {
     const defaultPosition: [number, number] =
-      activities.length > 0 ? activities[0].coordinates : [40.7128, -74.006];
+      activities.length > 0 ? activities[0].coordinates : [40.7128, -74.0060];
 
-    const mapRef = useRef<LeafletMap | null>(null);
+    let mapInstance: LeafletMap | null = null;
 
     useImperativeHandle(ref, () => ({
-      getMap: () => mapRef.current,
+      getMap: () => mapInstance,
     }));
 
     return (
       <MapContainer
         center={defaultPosition}
         zoom={13}
-        scrollWheelZoom={true}
+        scrollWheelZoom
         className={className}
-        ref={mapRef as any} // ✅ use ref instead of whenCreated
+        ref={(map) => {
+          if (map) mapInstance = map;
+        }}
       >
         <TileLayer
           attribution="&copy; Stadia Maps"
@@ -50,7 +57,7 @@ const TripMap = forwardRef<TripMapRef, TripMapProps>(
             key={idx}
             position={activity.coordinates}
             eventHandlers={{
-              click: () => onSelectActivity?.(activity),
+              click: () => onSelectActivity(activity),
             }}
           >
             <Popup>{activity.place}</Popup>
