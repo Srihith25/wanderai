@@ -23,7 +23,7 @@ export default function TripForm({ onGenerate }: TripFormProps) {
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch location suggestions from Nominatim (OpenStreetMap) API
+  // Fetch location suggestions from Photon API (OpenStreetMap)
   const fetchLocationSuggestions = async (query: string) => {
     if (query.trim().length < 2) {
       setSuggestions([]);
@@ -33,13 +33,12 @@ export default function TripForm({ onGenerate }: TripFormProps) {
 
     setLoadingSuggestions(true);
     try {
+      // Using Photon API - more reliable for city searches
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?` +
+        `https://photon.komoot.io/api/?` +
         `q=${encodeURIComponent(query)}&` +
-        `format=json&` +
-        `addressdetails=1&` +
-        `limit=8&` +
-        `featureType=city`
+        `limit=10&` +
+        `layer=city,state,country`
       );
 
       if (!response.ok) {
@@ -48,24 +47,35 @@ export default function TripForm({ onGenerate }: TripFormProps) {
 
       const data = await response.json();
 
-      const formattedSuggestions: PlaceSuggestion[] = data
-        .filter((item: any) => {
-          // Filter for cities, towns, and major locations
-          const type = item.type;
-          return ['city', 'town', 'village', 'municipality', 'administrative'].includes(type) ||
-                 item.class === 'place' || item.class === 'boundary';
-        })
-        .map((item: any) => {
-          const address = item.address || {};
-          const city = address.city || address.town || address.village || item.name;
-          const country = address.country || '';
+      const formattedSuggestions: PlaceSuggestion[] = data.features
+        .map((feature: any) => {
+          const props = feature.properties;
+
+          // Get city name - try multiple fields
+          const cityName = props.name || props.city || props.state || props.country;
+
+          // Get country
+          const country = props.country || '';
+
+          // Get state/region if available
+          const state = props.state || '';
+
+          // Build display string
+          let displayParts = [cityName];
+          if (state && state !== cityName) {
+            displayParts.push(state);
+          }
+          if (country && country !== cityName) {
+            displayParts.push(country);
+          }
 
           return {
-            name: city,
+            name: cityName,
             country: country,
-            display: `${city}${country ? ', ' + country : ''}`,
+            display: displayParts.join(', '),
           };
         })
+        .filter((item: PlaceSuggestion) => item.name) // Remove items without names
         .filter((item: PlaceSuggestion, index: number, self: PlaceSuggestion[]) =>
           // Remove duplicates
           index === self.findIndex(s => s.display === item.display)
