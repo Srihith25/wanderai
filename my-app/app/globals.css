@@ -27,7 +27,7 @@ body {
   z-index: 1 !important;
 }
 
-/* Remove borders and gaps between map tiles */
+/* Remove borders and gaps between map tiles for a cleaner version*/
 .leaflet-tile-container {
   transform: translate3d(0, 0, 0);
 }
