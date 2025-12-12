@@ -80,17 +80,23 @@ export default function MapWrapper({
         {/* Download Map */}
         <button
           onClick={downloadMap}
-          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg"
+          className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg flex items-center gap-2 group transition-all"
         >
-          📷 Download Map
+          <span>📷</span>
+          <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap">
+            Download Map
+          </span>
         </button>
 
         {/* Fullscreen */}
         <button
           onClick={toggleFullscreen}
-          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg shadow-lg"
+          className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg shadow-lg flex items-center gap-2 group transition-all"
         >
-          {isFullscreen ? '✕ Exit Fullscreen' : '⛶ Fullscreen'}
+          <span>{isFullscreen ? '✕' : '⛶'}</span>
+          <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap">
+            {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          </span>
         </button>
 
         {/* Download Itinerary Options */}
