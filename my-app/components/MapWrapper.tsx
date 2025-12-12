@@ -61,8 +61,24 @@ export default function MapWrapper({
         return;
       }
 
-      // Wait for tiles to load
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for all tiles to finish loading
+      await new Promise<void>((resolve) => {
+        const checkTilesLoaded = () => {
+          const tiles = mapDiv.querySelectorAll('.leaflet-tile');
+          const allLoaded = Array.from(tiles).every((tile) => {
+            const img = tile as HTMLImageElement;
+            return img.complete && img.naturalHeight !== 0;
+          });
+
+          if (allLoaded) {
+            // Extra delay to ensure rendering is complete
+            setTimeout(() => resolve(), 500);
+          } else {
+            setTimeout(checkTilesLoaded, 100);
+          }
+        };
+        checkTilesLoaded();
+      });
 
       // Dynamically import dom-to-image-more only on client side
       const domtoimage = (await import('dom-to-image-more')).default;
@@ -72,6 +88,10 @@ export default function MapWrapper({
         quality: 1,
         width: mapDiv.offsetWidth,
         height: mapDiv.offsetHeight,
+        style: {
+          // Ensure tiles are rendered without borders
+          'image-rendering': 'crisp-edges',
+        },
         filter: (node: HTMLElement) => {
           // Filter out controls and buttons
           if (node.tagName === 'BUTTON') return false;

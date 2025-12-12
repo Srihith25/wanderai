@@ -26,3 +26,25 @@ body {
 .leaflet-pane {
   z-index: 1 !important;
 }
+
+/* Remove borders and gaps between map tiles */
+.leaflet-tile-container {
+  transform: translate3d(0, 0, 0);
+}
+
+.leaflet-tile {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: transform;
+  outline: none !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block;
+}
+
+.leaflet-tile-loaded {
+  border: none !important;
+}
