@@ -1,7 +1,7 @@
 'use client';
 import dynamic from 'next/dynamic';
 import { useState, useRef } from 'react';
-import * as html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas';
 import { Map } from 'leaflet';
 
 const TripMap = dynamic(() => import('./TripMap'), {
@@ -49,14 +49,25 @@ export default function MapWrapper({
 
   const downloadMap = async () => {
     const mapDiv = mapContainerRef.current;
-    if (!mapDiv) return;
+    if (!mapDiv) {
+      alert('Map container not found. Please try again.');
+      return;
+    }
 
     try {
-      const canvas = await (html2canvas as any)(mapDiv, {
+      // Wait a bit for the map to fully render
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const canvas = await html2canvas(mapDiv, {
         useCORS: true,
         allowTaint: false,
-        background: null,
+        backgroundColor: null,
         scale: 2,
+        logging: false,
+        ignoreElements: (element) => {
+          // Ignore buttons and controls in the screenshot
+          return element.tagName === 'BUTTON';
+        },
       });
 
       const link = document.createElement('a');

@@ -49,11 +49,11 @@ interface TripMapProps {
   className?: string;
 }
 
-function MapController({ center }: { center: [number, number] }) {
+function MapController({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, 14);
-  }, [center, map]);
+    map.setView(center, zoom);
+  }, [center, zoom, map]);
   return null;
 }
 
@@ -78,17 +78,13 @@ const TripMap = forwardRef<{ getMap: () => L.Map | null }, TripMapProps>(
       getMap: () => mapRef.current,
     }));
 
-    if (!activities || activities.length === 0) {
-      return (
-        <div
-          className={`${isFullscreen ? 'h-full' : 'h-96'} w-full rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400`}
-        >
-          Generate an itinerary to see locations on the map
-        </div>
-      );
-    }
+    // Default center for world map when no activities
+    const hasActivities = activities && activities.length > 0;
+    const center: [number, number] = hasActivities
+      ? (selectedActivity?.coordinates || activities[0]?.coordinates || [20, 0])
+      : [20, 0]; // Default world view center
 
-    const center = selectedActivity?.coordinates || activities[0]?.coordinates || [0, 0];
+    const zoom = hasActivities ? 14 : 2; // Zoom out for world view
 
     const tileUrl =
       resolvedTheme === 'dark'
@@ -98,12 +94,12 @@ const TripMap = forwardRef<{ getMap: () => L.Map | null }, TripMapProps>(
     return (
       <MapContainer
         center={center}
-        zoom={14}
+        zoom={zoom}
         className={className ?? `${isFullscreen ? 'h-full' : 'h-96'} w-full rounded-lg`}
         ref={mapRef}
       >
         <TileLayer url={tileUrl} attribution="&copy; OpenStreetMap contributors" />
-        <MapController center={center} />
+        <MapController center={center} zoom={zoom} />
         <ResizeHandler isFullscreen={isFullscreen ?? false} />
 
         {activities.map((activity, idx) => (
