@@ -14,8 +14,10 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('auto');
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const stored = localStorage.getItem('theme') as Theme | null;
     if (stored) {
       setTheme(stored);
@@ -41,9 +43,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   useEffect(() => {
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(resolvedTheme);
-  }, [resolvedTheme]);
+    if (!mounted) return;
+
+    const root = document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(resolvedTheme);
+
+    // Force a repaint
+    root.style.colorScheme = resolvedTheme;
+
+    console.log('Theme changed to:', resolvedTheme);
+    console.log('HTML classes:', root.className);
+    console.log('Color scheme:', root.style.colorScheme);
+  }, [resolvedTheme, mounted]);
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
