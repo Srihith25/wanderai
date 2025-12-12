@@ -1,7 +1,7 @@
 'use client';
 import dynamic from 'next/dynamic';
 import { useState, useRef } from 'react';
-import html2canvas from 'html2canvas';
+import domtoimage from 'dom-to-image-more';
 import { Map } from 'leaflet';
 
 const TripMap = dynamic(() => import('./TripMap'), {
@@ -48,35 +48,47 @@ export default function MapWrapper({
   };
 
   const downloadMap = async () => {
-    const mapDiv = mapContainerRef.current;
-    if (!mapDiv) {
-      alert('Map container not found. Please try again.');
-      return;
-    }
-
     try {
-      // Wait a bit for the map to fully render
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const mapInstance = tripMapRef.current?.getMap();
+      if (!mapInstance) {
+        alert('Map not ready. Please try again.');
+        return;
+      }
 
-      const canvas = await html2canvas(mapDiv, {
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: null,
-        scale: 2,
-        logging: false,
-        ignoreElements: (element) => {
-          // Ignore buttons and controls in the screenshot
-          return element.tagName === 'BUTTON';
+      // Get the map container
+      const mapDiv = mapInstance.getContainer();
+      if (!mapDiv) {
+        alert('Map container not found.');
+        return;
+      }
+
+      // Wait for tiles to load
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Use dom-to-image-more to capture the map
+      const dataUrl = await domtoimage.toPng(mapDiv, {
+        quality: 1,
+        width: mapDiv.offsetWidth,
+        height: mapDiv.offsetHeight,
+        filter: (node: HTMLElement) => {
+          // Filter out controls and buttons
+          if (node.tagName === 'BUTTON') return false;
+          if (node.classList && (
+            node.classList.contains('leaflet-control-zoom') ||
+            node.classList.contains('leaflet-control-attribution')
+          )) return false;
+          return true;
         },
       });
 
+      // Download the image
       const link = document.createElement('a');
-      link.download = 'trip-map.png';
-      link.href = canvas.toDataURL('image/png');
+      link.download = `trip-map-${Date.now()}.png`;
+      link.href = dataUrl;
       link.click();
     } catch (error) {
       console.error('Failed to download map:', error);
-      alert('Failed to download map. Please try again.');
+      alert(`Failed to download map: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
