@@ -74,14 +74,13 @@ export default function MapWrapper({
     : 'relative w-full h-96';
 
   return (
-    <>
-      {/* Floating buttons (ALWAYS ON TOP) */}
-      <div className="fixed top-4 right-4 z-[2000] flex flex-col gap-2">
-
+    <div ref={mapContainerRef} className={containerClass}>
+      {/* Buttons inside map container */}
+      <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
         {/* Download Map */}
         <button
           onClick={downloadMap}
-          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-xl"
+          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg"
         >
           📷 Download Map
         </button>
@@ -89,7 +88,7 @@ export default function MapWrapper({
         {/* Fullscreen */}
         <button
           onClick={toggleFullscreen}
-          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg shadow-xl"
+          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg shadow-lg"
         >
           {isFullscreen ? '✕ Exit Fullscreen' : '⛶ Fullscreen'}
         </button>
@@ -99,25 +98,25 @@ export default function MapWrapper({
           <div className="relative">
             <button
               onClick={() => setShowItineraryMenu(prev => !prev)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xl"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg"
             >
               ⬇️ Download Itinerary
             </button>
 
             {showItineraryMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-xl z-[3000]">
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-xl z-[1100]">
                 <button
                   onClick={() => {
                     setShowItineraryMenu(false);
                     onDownloadItinerary();
                   }}
-                  className="block w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="block w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
                   Download PDF
                 </button>
                 <button
                   onClick={() => alert('Add more formats if needed')}
-                  className="block w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="block w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
                   Download TXT
                 </button>
@@ -128,16 +127,14 @@ export default function MapWrapper({
       </div>
 
       {/* MAP */}
-      <div ref={mapContainerRef} className={containerClass}>
-        <TripMap
-          ref={tripMapRef}
-          activities={activities}
-          selectedActivity={selectedActivity}
-          onSelectActivity={onSelectActivity}
-          isFullscreen={isFullscreen}
-          className="h-full w-full"
-        />
-      </div>
-    </>
+      <TripMap
+        ref={tripMapRef}
+        activities={activities}
+        selectedActivity={selectedActivity}
+        onSelectActivity={onSelectActivity}
+        isFullscreen={isFullscreen}
+        className="h-full w-full"
+      />
+    </div>
   );
 }

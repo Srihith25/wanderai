@@ -13,7 +13,7 @@ interface ChatBotProps {
 
 export default function ChatBot({ itinerary, onClose }: ChatBotProps) {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Namaste! 🙏 I\'m Sanchari, your travel companion. Ask me anything about your trip!' }
+    { role: 'assistant', content: 'Hello! I\'m Sanchari, your travel companion. Ask me anything about your trip!' }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
