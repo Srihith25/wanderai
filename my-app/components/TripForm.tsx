@@ -11,25 +11,6 @@ interface PlaceSuggestion {
   display: string;
 }
 
-// Popular destinations with suggestions - defined outside component
-const popularDestinations: PlaceSuggestion[] = [
-  { name: 'Paris', country: 'France', display: 'Paris, France' },
-  { name: 'London', country: 'United Kingdom', display: 'London, United Kingdom' },
-  { name: 'Tokyo', country: 'Japan', display: 'Tokyo, Japan' },
-  { name: 'New York', country: 'USA', display: 'New York, USA' },
-  { name: 'Rome', country: 'Italy', display: 'Rome, Italy' },
-  { name: 'Barcelona', country: 'Spain', display: 'Barcelona, Spain' },
-  { name: 'Dubai', country: 'UAE', display: 'Dubai, UAE' },
-  { name: 'Bali', country: 'Indonesia', display: 'Bali, Indonesia' },
-  { name: 'Singapore', country: 'Singapore', display: 'Singapore' },
-  { name: 'Sydney', country: 'Australia', display: 'Sydney, Australia' },
-  { name: 'Amsterdam', country: 'Netherlands', display: 'Amsterdam, Netherlands' },
-  { name: 'Istanbul', country: 'Turkey', display: 'Istanbul, Turkey' },
-  { name: 'Bangkok', country: 'Thailand', display: 'Bangkok, Thailand' },
-  { name: 'Prague', country: 'Czech Republic', display: 'Prague, Czech Republic' },
-  { name: 'Venice', country: 'Italy', display: 'Venice, Italy' },
-];
-
 export default function TripForm({ onGenerate }: TripFormProps) {
   const [destination, setDestination] = useState('');
   const [days, setDays] = useState<number | ''>('');
@@ -38,30 +19,83 @@ export default function TripForm({ onGenerate }: TripFormProps) {
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  console.log('Component render - suggestions:', suggestions.length, 'showSuggestions:', showSuggestions);
-
-  // Handle destination input changes
-  const handleDestinationChange = (value: string) => {
-    setDestination(value);
-    console.log('Input value:', value, 'Length:', value.trim().length); // Debug log
-
-    if (value.trim().length >= 2) {
-      const filtered = popularDestinations.filter(place => {
-        const match = place.display.toLowerCase().includes(value.toLowerCase()) ||
-                     place.name.toLowerCase().includes(value.toLowerCase()) ||
-                     place.country.toLowerCase().includes(value.toLowerCase());
-        return match;
-      });
-      console.log('Filtered suggestions:', filtered); // Debug log
-      console.log('Total destinations:', popularDestinations.length); // Debug log
-      setSuggestions(filtered);
-      setShowSuggestions(true);
-    } else {
+  // Fetch location suggestions from Nominatim (OpenStreetMap) API
+  const fetchLocationSuggestions = async (query: string) => {
+    if (query.trim().length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
+      return;
     }
+
+    setLoadingSuggestions(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?` +
+        `q=${encodeURIComponent(query)}&` +
+        `format=json&` +
+        `addressdetails=1&` +
+        `limit=8&` +
+        `featureType=city`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch suggestions');
+      }
+
+      const data = await response.json();
+
+      const formattedSuggestions: PlaceSuggestion[] = data
+        .filter((item: any) => {
+          // Filter for cities, towns, and major locations
+          const type = item.type;
+          return ['city', 'town', 'village', 'municipality', 'administrative'].includes(type) ||
+                 item.class === 'place' || item.class === 'boundary';
+        })
+        .map((item: any) => {
+          const address = item.address || {};
+          const city = address.city || address.town || address.village || item.name;
+          const country = address.country || '';
+
+          return {
+            name: city,
+            country: country,
+            display: `${city}${country ? ', ' + country : ''}`,
+          };
+        })
+        .filter((item: PlaceSuggestion, index: number, self: PlaceSuggestion[]) =>
+          // Remove duplicates
+          index === self.findIndex(s => s.display === item.display)
+        )
+        .slice(0, 8);
+
+      setSuggestions(formattedSuggestions);
+      setShowSuggestions(formattedSuggestions.length > 0);
+    } catch (err) {
+      console.error('Failed to fetch location suggestions:', err);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  // Handle destination input changes with debouncing
+  const handleDestinationChange = (value: string) => {
+    setDestination(value);
+
+    // Clear previous debounce timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Debounce API calls
+    debounceTimerRef.current = setTimeout(() => {
+      fetchLocationSuggestions(value);
+    }, 300); // Wait 300ms after user stops typing
   };
 
   // Handle suggestion selection
@@ -79,7 +113,13 @@ export default function TripForm({ onGenerate }: TripFormProps) {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      // Cleanup debounce timer on unmount
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -119,12 +159,7 @@ export default function TripForm({ onGenerate }: TripFormProps) {
           value={destination}
           onChange={(e) => handleDestinationChange(e.target.value)}
           onFocus={() => {
-            console.log('Input focused, destination length:', destination.trim().length);
-            if (destination.trim().length >= 2) {
-              setShowSuggestions(true);
-            } else {
-              // Show all destinations on focus if input is empty
-              setSuggestions(popularDestinations);
+            if (destination.trim().length >= 2 && suggestions.length > 0) {
               setShowSuggestions(true);
             }
           }}
@@ -134,11 +169,21 @@ export default function TripForm({ onGenerate }: TripFormProps) {
           autoComplete="off"
         />
 
+        {/* Loading indicator */}
+        {loadingSuggestions && (
+          <div className="absolute right-3 top-[42px] text-gray-400">
+            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </div>
+        )}
+
         {/* Suggestions dropdown */}
         {showSuggestions && suggestions.length > 0 && (
           <div
             ref={suggestionsRef}
-            className="absolute z-[9999] w-full mt-1 bg-white dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400 rounded-lg shadow-2xl max-h-60 overflow-y-auto"
+            className="absolute z-[9999] w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl max-h-60 overflow-y-auto"
             style={{ position: 'absolute', top: '100%', left: 0, right: 0 }}
           >
             {suggestions.map((suggestion, idx) => (
@@ -155,13 +200,6 @@ export default function TripForm({ onGenerate }: TripFormProps) {
                 </div>
               </button>
             ))}
-          </div>
-        )}
-
-        {/* Debug indicator */}
-        {showSuggestions && (
-          <div className="text-xs text-red-500 mt-1">
-            Dropdown active: {suggestions.length} suggestions
           </div>
         )}
       </div>
