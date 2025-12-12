@@ -7,7 +7,7 @@ interface TripFormProps {
 
 export default function TripForm({ onGenerate }: TripFormProps) {
   const [destination, setDestination] = useState('');
-  const [days, setDays] = useState(3);
+  const [days, setDays] = useState<number | ''>('');
   const [preferences, setPreferences] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -62,8 +62,17 @@ export default function TripForm({ onGenerate }: TripFormProps) {
           min={1}
           max={30}
           value={days}
-          onChange={(e) => setDays(Math.max(1, Math.min(30, Number(e.target.value))))}
-          className="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onChange={(e) => {
+            const value = e.target.value;
+            if (value === '') {
+              setDays('');
+            } else {
+              setDays(Math.max(1, Math.min(30, Number(value))));
+            }
+          }}
+          placeholder="Enter number of days (1-30)"
+          className="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          required
         />
       </div>
 

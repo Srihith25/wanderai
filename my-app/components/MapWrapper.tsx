@@ -103,11 +103,27 @@ export default function MapWrapper({
         },
       });
 
-      // Download the image
+      // Download the image (mobile-friendly approach)
       const link = document.createElement('a');
       link.download = `trip-map-${Date.now()}.png`;
       link.href = dataUrl;
+
+      // Mobile Safari and other mobile browsers need special handling
+      if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        // For mobile devices, open in new tab if direct download fails
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+      }
+
+      // Append to body, click, and remove
+      document.body.appendChild(link);
       link.click();
+
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(dataUrl);
+      }, 100);
     } catch (error) {
       console.error('Failed to download map:', error);
       alert(`Failed to download map: ${error instanceof Error ? error.message : 'Unknown error'}`);
