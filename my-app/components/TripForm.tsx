@@ -11,6 +11,25 @@ interface PlaceSuggestion {
   display: string;
 }
 
+// Popular destinations with suggestions - defined outside component
+const popularDestinations: PlaceSuggestion[] = [
+  { name: 'Paris', country: 'France', display: 'Paris, France' },
+  { name: 'London', country: 'United Kingdom', display: 'London, United Kingdom' },
+  { name: 'Tokyo', country: 'Japan', display: 'Tokyo, Japan' },
+  { name: 'New York', country: 'USA', display: 'New York, USA' },
+  { name: 'Rome', country: 'Italy', display: 'Rome, Italy' },
+  { name: 'Barcelona', country: 'Spain', display: 'Barcelona, Spain' },
+  { name: 'Dubai', country: 'UAE', display: 'Dubai, UAE' },
+  { name: 'Bali', country: 'Indonesia', display: 'Bali, Indonesia' },
+  { name: 'Singapore', country: 'Singapore', display: 'Singapore' },
+  { name: 'Sydney', country: 'Australia', display: 'Sydney, Australia' },
+  { name: 'Amsterdam', country: 'Netherlands', display: 'Amsterdam, Netherlands' },
+  { name: 'Istanbul', country: 'Turkey', display: 'Istanbul, Turkey' },
+  { name: 'Bangkok', country: 'Thailand', display: 'Bangkok, Thailand' },
+  { name: 'Prague', country: 'Czech Republic', display: 'Prague, Czech Republic' },
+  { name: 'Venice', country: 'Italy', display: 'Venice, Italy' },
+];
+
 export default function TripForm({ onGenerate }: TripFormProps) {
   const [destination, setDestination] = useState('');
   const [days, setDays] = useState<number | ''>('');
@@ -21,37 +40,24 @@ export default function TripForm({ onGenerate }: TripFormProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  // Popular destinations with suggestions
-  const popularDestinations: PlaceSuggestion[] = [
-    { name: 'Paris', country: 'France', display: 'Paris, France' },
-    { name: 'London', country: 'United Kingdom', display: 'London, United Kingdom' },
-    { name: 'Tokyo', country: 'Japan', display: 'Tokyo, Japan' },
-    { name: 'New York', country: 'USA', display: 'New York, USA' },
-    { name: 'Rome', country: 'Italy', display: 'Rome, Italy' },
-    { name: 'Barcelona', country: 'Spain', display: 'Barcelona, Spain' },
-    { name: 'Dubai', country: 'UAE', display: 'Dubai, UAE' },
-    { name: 'Bali', country: 'Indonesia', display: 'Bali, Indonesia' },
-    { name: 'Singapore', country: 'Singapore', display: 'Singapore' },
-    { name: 'Sydney', country: 'Australia', display: 'Sydney, Australia' },
-    { name: 'Amsterdam', country: 'Netherlands', display: 'Amsterdam, Netherlands' },
-    { name: 'Istanbul', country: 'Turkey', display: 'Istanbul, Turkey' },
-    { name: 'Bangkok', country: 'Thailand', display: 'Bangkok, Thailand' },
-    { name: 'Prague', country: 'Czech Republic', display: 'Prague, Czech Republic' },
-    { name: 'Venice', country: 'Italy', display: 'Venice, Italy' },
-  ];
+  console.log('Component render - suggestions:', suggestions.length, 'showSuggestions:', showSuggestions);
 
   // Handle destination input changes
   const handleDestinationChange = (value: string) => {
     setDestination(value);
+    console.log('Input value:', value, 'Length:', value.trim().length); // Debug log
 
     if (value.trim().length >= 2) {
-      const filtered = popularDestinations.filter(place =>
-        place.display.toLowerCase().includes(value.toLowerCase())
-      );
+      const filtered = popularDestinations.filter(place => {
+        const match = place.display.toLowerCase().includes(value.toLowerCase()) ||
+                     place.name.toLowerCase().includes(value.toLowerCase()) ||
+                     place.country.toLowerCase().includes(value.toLowerCase());
+        return match;
+      });
       console.log('Filtered suggestions:', filtered); // Debug log
+      console.log('Total destinations:', popularDestinations.length); // Debug log
       setSuggestions(filtered);
       setShowSuggestions(true);
-      console.log('Show suggestions:', true); // Debug log
     } else {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -112,7 +118,16 @@ export default function TripForm({ onGenerate }: TripFormProps) {
           type="text"
           value={destination}
           onChange={(e) => handleDestinationChange(e.target.value)}
-          onFocus={() => destination.trim().length >= 2 && setShowSuggestions(true)}
+          onFocus={() => {
+            console.log('Input focused, destination length:', destination.trim().length);
+            if (destination.trim().length >= 2) {
+              setShowSuggestions(true);
+            } else {
+              // Show all destinations on focus if input is empty
+              setSuggestions(popularDestinations);
+              setShowSuggestions(true);
+            }
+          }}
           placeholder="Where do you want to go?"
           className="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           required
